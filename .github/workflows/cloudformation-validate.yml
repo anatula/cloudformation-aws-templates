@@ -1,0 +1,25 @@
+name: validate-cloudformation-templates
+on: push
+jobs:
+  validation:
+    name: validate
+    runs-on: ubuntu-latest
+    container:
+      image: python:3.11-slim
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install cfn-lint
+        run: pip install cfn-lint
+
+      - name: Validate CloudFormation Templates in Current Directory
+        run: |
+          for template in $(find . -name "template.yaml"); do
+            echo "Validating template: $template"
+            cfn-lint $template
+            if [ $? -ne 0 ]; then
+              echo "❌ Validation failed for $template"
+              exit 1
+            fi
+          done
