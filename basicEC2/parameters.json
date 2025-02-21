@@ -1,0 +1,10 @@
+[
+  {
+    "ParameterKey": "InstanceName",
+    "ParameterValue": "MyLinuxEC2"
+  },
+  {
+    "ParameterKey": "KeyName",
+    "ParameterValue": "aws-ec2-ed25519"
+  }
+]
