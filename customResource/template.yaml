@@ -1,0 +1,83 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Simple CloudFormation template with a Custom Resource backed by a Lambda function.
+
+Resources:
+  CustomResourceLambda:
+    Type: AWS::Lambda::Function
+    Properties:
+      Handler: index.handler
+      Role: !GetAtt LambdaExecutionRole.Arn
+      Code:
+        ZipFile: |
+          const response = require('cfn-response');
+          exports.handler = (event, context) => {
+            console.log("Event: ", JSON.stringify(event, null, 2));
+
+            const { RequestType, ResourceProperties } = event;
+            const { MyProperty } = ResourceProperties;
+
+            switch (RequestType) {
+              case 'Create':
+                console.log("Creating resource with MyProperty:", MyProperty);
+                // Simulate resource creation (e.g., store data in a database or S3)
+                const resourceId = "resource-" + Math.random().toString(36).substring(7);
+                response.send(event, context, response.SUCCESS, { ResourceId: resourceId, Message: "Resource created successfully" });
+                break;
+
+              case 'Update':
+                console.log("Updating resource with MyProperty:", MyProperty);
+                // Simulate resource update (e.g., modify existing data)
+                const updateResourceId = "resource-" + Math.random().toString(36).substring(7);
+                response.send(event, context, response.SUCCESS, { ResourceId: updateResourceId, Message: "Resource updated successfully" });
+                break;
+
+              case 'Delete':
+                console.log("Deleting resource with MyProperty:", MyProperty);
+                // Simulate resource deletion (e.g., remove data from a database or S3)
+                response.send(event, context, response.SUCCESS, { Message: "Resource deleted successfully" });
+                break;
+
+              default:
+                response.send(event, context, response.FAILED, { Message: "Unknown request type" });
+            }
+          };
+      Runtime: nodejs18.x
+      Timeout: 30
+
+  LambdaExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - lambda.amazonaws.com
+            Action:
+              - sts:AssumeRole
+      Policies:
+        - PolicyName: LambdaBasicExecution
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - logs:CreateLogGroup
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+                Resource: '*'
+
+  MyCustomResource:
+    Type: Custom::MyCustomResource
+    Properties:
+      ServiceToken: !GetAtt CustomResourceLambda.Arn
+      MyProperty: "Changed again! ExampleValue"
+
+Outputs:
+  CustomResourceMessage:
+    Description: "Message returned by the Custom Resource"
+    Value: !GetAtt MyCustomResource.Message
+  CustomResourceId:
+    Description: "Resource ID generated during creation"
+    Value: !GetAtt MyCustomResource.ResourceId
